@@ -11,6 +11,7 @@
 #include <QGraphicsLineItem>
 #include <QMessageBox>
 #include "Parser.h"
+#include "qlistwidget.h"
 #include <QGuiApplication>
 #include <QScreen>
 class MainWindow : public QMainWindow {
@@ -23,15 +24,19 @@ public:
 private slots:
     void browseFile();
     void parseFile();
-
+    void scanTokens();
 private:
     QLineEdit *filePathLineEdit;
     QPushButton *browseButton;
     QPushButton *parseButton;
+    QPushButton *scanButton;
     QGraphicsView *graphicsView;
     QGraphicsScene *scene;
-
+    QListWidget *tokenList;  // Displaying tokens
+    QString parseText();  // Function to handle text parsing
+    QStringList tokenize(const std::vector<Token> &tokens);
     Parser *parser; // Instance of your Parser class
+    Scanner * SCanner;
     void calculatePositions(Node* root, qreal x, qreal y,
                             map<Node*, QPointF>& positions);
     qreal findHighestXAtY(const map<Node*, QPointF>& positions, qreal specificY);
@@ -42,37 +47,102 @@ private:
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), parser(nullptr) {
-    // Layout and Widgets
+
     QWidget *centralWidget = new QWidget(this);
     QVBoxLayout *mainLayout = new QVBoxLayout(centralWidget);
 
+    // First Layer: File layout
     QHBoxLayout *fileLayout = new QHBoxLayout();
     filePathLineEdit = new QLineEdit(this);
     browseButton = new QPushButton("Browse", this);
+    scanButton = new QPushButton("Scan", this);
     fileLayout->addWidget(filePathLineEdit);
     fileLayout->addWidget(browseButton);
+    fileLayout->addWidget(scanButton);
+    mainLayout->addLayout(fileLayout);
 
+    // Second Layer: Parse Button
     parseButton = new QPushButton("Parse", this);
+    mainLayout->addWidget(parseButton);
+
+    // Third Layer: Tokens list and GraphicsView side by side
+    QHBoxLayout *thirdLayerLayout = new QHBoxLayout();
+    tokenList = new QListWidget(this);
     graphicsView = new QGraphicsView(this);
     scene = new QGraphicsScene(this);
     graphicsView->setScene(scene);
-
-    mainLayout->addLayout(fileLayout);
-    mainLayout->addWidget(parseButton);
-    mainLayout->addWidget(graphicsView);
+    thirdLayerLayout->addWidget(tokenList);
+    thirdLayerLayout->addWidget(graphicsView);
+    tokenList->setFixedWidth(200);
+    QFont font = tokenList->font();
+    font.setPointSize(14);
+    font.bold();
+    tokenList->setFont(font);
+    mainLayout->addLayout(thirdLayerLayout);
 
     setCentralWidget(centralWidget);
     QRect availableGeometry = QGuiApplication::primaryScreen()->availableGeometry();
-    resize(availableGeometry.width()-5, availableGeometry.height()-30);
-    // Connect signals and slots
+    resize(availableGeometry.width() - 5, availableGeometry.height() - 30);
+
     connect(browseButton, &QPushButton::clicked, this, &MainWindow::browseFile);
     connect(parseButton, &QPushButton::clicked, this, &MainWindow::parseFile);
+    connect(scanButton, &QPushButton::clicked, this, &MainWindow::scanTokens);
 }
+
 
 MainWindow::~MainWindow() {
     delete parser;
 }
+void MainWindow::scanTokens() {
+    QString filePath = filePathLineEdit->text();
+    if (filePath.isEmpty()) {
+        scene->clear();
+        tokenList->clear();
+        QString errorMessage = QString("ERROR : Enter a non-empty filepath");
+        QMessageBox::critical(nullptr, "Empty FilePath ERROR", errorMessage);
+        return;
+    }
 
+    try
+    {
+        SCanner = new Scanner();
+        SCanner->scanFile(filePath.toStdString());
+    }
+    catch (const ios_base::failure& e) {
+        QString errorMessage = QString(e.what());
+        delete SCanner;
+        SCanner = nullptr; // Set parser to nullptr
+        scene->clear();
+        tokenList->clear();
+        QMessageBox::critical(nullptr, "Aborting :: File Error", errorMessage);
+        return;
+    }
+    catch(const exception& e)
+    {
+        QString errorMessage = QString("Error during scanning -> ").append(e.what());
+        delete SCanner;
+        QMessageBox::critical(nullptr, "Aborting :: Scanner Error", errorMessage);
+        return;
+    }
+    QStringList tokens = tokenize(SCanner->tokens);
+    if (tokens.isEmpty()) {
+        tokenList->addItem("No tokens found.");
+    } else {
+        tokenList->clear();  // Clear previous tokens
+        tokenList->addItems(tokens);  // Display scanned tokens
+    }
+    delete SCanner;
+    SCanner = nullptr;
+}
+QStringList MainWindow::tokenize(const std::vector<Token> &tokens) {
+    QStringList tokenStrings;
+
+    for (const Token &token : tokens) {
+        tokenStrings.append(QString("%1: %2").arg(QString::fromStdString(token.type)).arg(QString::fromStdString(token.value)));
+    }
+
+    return tokenStrings;
+}
 void MainWindow::browseFile() {
     QString fileName = QFileDialog::getOpenFileName(this, "Open File", "", "Text Files (*.txt);;All Files (*)");
     if (!fileName.isEmpty()) {
@@ -82,9 +152,15 @@ void MainWindow::browseFile() {
     if (parser) {
         delete parser;
         parser = nullptr;
+
+    }
+    if(SCanner)
+    {
+        SCanner = nullptr;
     }
 
     // Clear the previous drawing
+    tokenList->clear();
     scene->clear();
 }
 
@@ -92,6 +168,7 @@ void MainWindow::parseFile() {
     QString filePath = filePathLineEdit->text();
     if (filePath.isEmpty()) {
         scene->clear();
+        tokenList->clear();
         QString errorMessage = QString("ERROR : Enter a non-empty filepath");
         QMessageBox::critical(nullptr, "Empty FilePath ERROR", errorMessage);
         return;
@@ -107,6 +184,8 @@ void MainWindow::parseFile() {
         QString errorMessage = QString(e.what());
         delete parser;
         parser = nullptr; // Set parser to nullptr
+        scene->clear();
+        tokenList->clear();
         QMessageBox::critical(nullptr, "Aborting :: File Error", errorMessage);
         return;
     }
@@ -161,7 +240,7 @@ void MainWindow::calculatePositions(Node* root, qreal x, qreal y,
         qreal leftChildX = originalX + leftChildXOffset;
         if (positions.find(CurrentNode) == positions.end())
         {
-        positions[CurrentNode] = QPointF(leftChildX, childY);
+            positions[CurrentNode] = QPointF(leftChildX, childY);
         }
         calculatePositions(CurrentNode, leftChildX, childY, positions); // Recurse for the left child
     }
@@ -178,7 +257,7 @@ void MainWindow::calculatePositions(Node* root, qreal x, qreal y,
         } else {
             // Position the right child normally
             qreal rightChildXOffset = 100; // Minimum horizontal offset
-            qreal rightChildX = findHighestXAtY(positions,childY) + rightChildXOffset;
+            qreal rightChildX = findHighestXAtY(positions,-9000) + rightChildXOffset;
             if(rightChildX == numeric_limits<qreal>::lowest()) // it means no there's no nodes in this level yet.
             {
                 rightChildX = originalX + rightChildXOffset;

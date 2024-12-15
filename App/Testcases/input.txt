@@ -1,0 +1,44 @@
+{ Sample program in TINY language - advanced computation and control flow }
+read x; { Input an integer }
+write x + 1; { Output input incremented by 1 }
+if 0 < x then { Only proceed if x is positive }
+  sum := 0;
+  i := 1;
+  { Sum integers from 1 to x }
+  repeat
+    sum := sum + i;
+    i := i + 1
+  until i < x;
+  write sum; { Output the sum of integers from 1 to x }
+
+  { Compute factorial of x }
+  fact := 1;
+  repeat
+    fact := fact * x;
+    x := x - 1
+  until x = 0;
+  write fact; { Output factorial of x }
+
+  { Check if factorial is even or odd }
+  if fact = 0 then
+    write Even
+  else
+    write Odd
+  end;
+  { Additional calculations }
+  counter := 10;
+  repeat
+    counter := counter - 1;
+    zz := counter * 2; { Double the counter each loop }
+    write zz
+  until counter = 0
+
+else { If x is not positive, set x to 5 and perform dummy operations }
+  x := 5;
+  repeat
+    x := x - 1; { Decrement x in each iteration }
+    dummy := x * 3;
+    write dummy { Output the dummy calculation }
+  until x = 0
+
+end { End of the program }

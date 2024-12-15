@@ -13,6 +13,7 @@
 #include <QGraphicsTextItem>
 #include <QGraphicsLineItem>
 #include "Parser.h"
+#include "qlistwidget.h"
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -24,18 +25,23 @@ public:
 private slots:
     void browseFile();
     void parseFile();
+    void scanTokens();
 
 private:
     QLineEdit *filePathLineEdit;
     QPushButton *browseButton;
     QPushButton *parseButton;
+    QPushButton *scanButton;
     QGraphicsView *graphicsView;
     QGraphicsScene *scene;
-
+    QListWidget *tokenList;  // Displaying tokens
+    QString parseText();  // Function to handle text parsing
+    QStringList tokenize(const QString &text);  // Tokenizing method
     Parser *parser; // Instance of your Parser class
-    int calculateSubtreeWidth(Node* node);
-    void calculatePositions(Node* node, qreal x, qreal y, std::map<Node*, QPointF>& positions);
-    void drawSyntaxTree(Node* root, std::map<Node*, QPointF>& positions);
+    void calculatePositions(Node* root, qreal x, qreal y,
+                            map<Node*, QPointF>& positions);
+    qreal findHighestXAtY(const map<Node*, QPointF>& positions, qreal specificY);
+    void drawSyntaxTree(Node* root, map<Node*, QPointF>& positions);
     void drawNode(Node *node, qreal x, qreal y);
     void drawEdge(qreal x1, qreal y1, qreal x2, qreal y2);
 };

@@ -22,7 +22,6 @@ public:
 class Scanner {
 private:
     vector<string> reservedWords = { "if", "then", "end", "repeat", "until", "read", "write" };
-    vector<Token> tokens;
     unsigned int tokenIndex = 0;
     bool inComment = false;
     int openCommentLine = -1;
@@ -40,6 +39,7 @@ private:
 
 public:
     Scanner();
+    vector<Token> tokens;
     Token getToken();
     void scanFile(const string& filename);
     void printTokens();
