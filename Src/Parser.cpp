@@ -19,7 +19,7 @@ void Parser::match(string expectedToken)
     }
     else
     {
-        throw std::runtime_error("Syntax error : Unmatched token ` " + lookahead.value + "`" + " at Line -> " + to_string(lookahead.lineNumber));
+        throw std::runtime_error("Syntax error : Unmatched token ` " + expectedToken + "`" + " at Line -> " + to_string(lookahead.lineNumber));
     }
 }
 

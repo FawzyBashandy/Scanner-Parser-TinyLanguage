@@ -126,7 +126,7 @@ Token Scanner::getToken() {
     if (tokenIndex >= tokens.size())
     {
         tokenIndex = 0;
-        return Token("EOF", "" , 0); // To mark the end of string of tokens
+        return Token("EOF", "" , tokens.back().lineNumber); // To mark the end of string of tokens
     }
     Token token = tokens.at(tokenIndex++); // advance after accessing the token}
     return token;

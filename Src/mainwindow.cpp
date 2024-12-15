@@ -121,6 +121,8 @@ void MainWindow::scanTokens() {
     {
         QString errorMessage = QString("Error during scanning -> ").append(e.what());
         delete SCanner;
+        scene->clear();
+        tokenList->clear();
         QMessageBox::critical(nullptr, "Aborting :: Scanner Error", errorMessage);
         return;
     }
@@ -193,6 +195,8 @@ void MainWindow::parseFile() {
     {
         QString errorMessage = QString("Error during scanning -> ").append(e.what());
         delete parser;
+        scene->clear();
+        tokenList->clear();
         parser = nullptr; // Set parser to nullptr
         QMessageBox::critical(nullptr, "Aborting :: Scanner Error", errorMessage);
         return;
